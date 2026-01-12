@@ -129,9 +129,16 @@ function toMin(t) {
 }
 
 function render() {
+  const selectedId = userSelect.value; // ★ 今選ばれている人を保存
+
   userSelect.innerHTML = data.map(u =>
     `<option value="${u.id}">${u.name}（¥${u.wage}）</option>`
   ).join("");
+
+  // ★ 以前の選択を復元
+  if (selectedId && data.some(u => u.id == selectedId)) {
+    userSelect.value = selectedId;
+  }
 
   const u = getUser();
   if (!u) {
@@ -173,5 +180,3 @@ function render() {
   history.innerHTML =
     u.history.slice(-10).map(h => `<li>${h}</li>`).join("");
 }
-
-render();
