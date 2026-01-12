@@ -8,7 +8,6 @@ const userSelect = document.getElementById("userSelect");
 const monthSelect = document.getElementById("monthSelect");
 const records = document.getElementById("records");
 const summary = document.getElementById("summary");
-const history = document.getElementById("history");
 const dateInput = document.getElementById("date");
 const startInput = document.getElementById("start");
 const endInput = document.getElementById("end");
@@ -30,21 +29,37 @@ function toMin(t) {
   return h * 60 + m;
 }
 
+// ===== select管理（重要）=====
+function updateUserSelect() {
+  const current = userSelect.value;
+
+  userSelect.innerHTML = data
+    .map(u => `<option value="${u.id}">${u.name}</option>`)
+    .join("");
+
+  if (current && data.some(u => String(u.id) === current)) {
+    userSelect.value = current;
+  }
+}
+
 // ===== 人 =====
 function addUser() {
   if (!userName.value || !userWage.value) return;
 
-  data.push({
+  const u = {
     id: Date.now(),
     name: userName.value,
     wage: Number(userWage.value),
-    records: [],
-    history: []
-  });
+    records: []
+  };
 
+  data.push(u);
   userName.value = "";
   userWage.value = "";
   save();
+
+  updateUserSelect();
+  userSelect.value = u.id;
   render();
 }
 
@@ -59,6 +74,7 @@ function editUser() {
   if (wage) u.wage = Number(wage);
 
   save();
+  updateUserSelect();
   render();
 }
 
@@ -69,6 +85,7 @@ function deleteUser() {
 
   data = data.filter(x => x.id !== u.id);
   save();
+  updateUserSelect();
   render();
 }
 
@@ -76,8 +93,6 @@ function deleteUser() {
 function addRecord() {
   const u = getUser();
   if (!u) return;
-
-  if (!dateInput.value || !startInput.value || !endInput.value) return;
 
   u.records.push({
     date: dateInput.value,
@@ -102,15 +117,10 @@ function deleteRecord(i) {
 
 // ===== 描画 =====
 function render() {
-  userSelect.innerHTML = data
-    .map(u => `<option value="${u.id}">${u.name}</option>`)
-    .join("");
-
   const u = getUser();
   if (!u) {
     records.innerHTML = "";
     summary.innerText = "";
-    history.innerHTML = "";
     viewUrl.innerText = "";
     return;
   }
@@ -125,7 +135,7 @@ function render() {
     if (month && !r.date.startsWith(month)) return;
 
     const work =
-      Math.max(0, toMin(r.end) - toMin(r.start) - (r.break || 0));
+      Math.max(0, toMin(r.end) - toMin(r.start) - r.break);
     totalMin += work;
 
     records.innerHTML += `
@@ -139,18 +149,20 @@ function render() {
     `;
   });
 
-  summary.innerText =
-    `合計 ${(totalMin / 60).toFixed(2)} 時間`;
+  summary.innerText = `合計 ${(totalMin / 60).toFixed(2)} 時間`;
 
-  const baseUrl =
+  const base =
     location.origin + location.pathname.replace(/\/[^/]*$/, "/");
-  viewUrl.innerText = `${baseUrl}view.html?user=${u.id}`;
+  viewUrl.innerText = `${base}view.html?user=${u.id}`;
 }
 
-// ===== 月1回の確定 =====
-function finalizeMonth() {
-  if (!confirm("今月分を確定しますか？")) return;
+function copyViewUrl() {
+  navigator.clipboard.writeText(viewUrl.innerText);
+  alert("コピーしました");
+}
 
+// ===== 月1回 =====
+function finalizeMonth() {
   const blob = new Blob(
     [JSON.stringify(data, null, 2)],
     { type: "application/json" }
@@ -160,9 +172,10 @@ function finalizeMonth() {
   a.href = URL.createObjectURL(blob);
   a.download = "timecard.json";
   a.click();
-
-  alert("timecard.json を出力しました。\nGitHub にアップしてください。");
 }
 
 // ===== 初期化 =====
-window.onload = render;
+window.onload = () => {
+  updateUserSelect();
+  render();
+};
