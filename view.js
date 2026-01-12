@@ -1,88 +1,52 @@
-const userSelect = document.getElementById("userSelect");
-const monthSelect = document.getElementById("monthSelect");
-const records = document.getElementById("records");
-const summary = document.getElementById("summary");
+// ===== URLから user ID を取得 =====
+const params = new URLSearchParams(location.search);
+const userId = params.get("user");
 
-let data = [];
+if (!userId) {
+  document.body.innerHTML = "ユーザー指定がありません";
+  throw new Error("no user");
+}
 
+// ===== 今月 =====
+const now = new Date();
+const monthStr =
+  now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+
+// ===== 時刻を分に =====
 function toMin(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
 
-// 今日から12か月前
-function oneYearAgo() {
-  const d = new Date();
-  d.setMonth(d.getMonth() - 12);
-  return d;
-}
-
-// 12か月以内の勤務があるか
-function hasRecentRecord(user) {
-  const limit = oneYearAgo();
-  return user.records.some(r => new Date(r.date) >= limit);
-}
-
-// URLパラメータ取得
-function getUserIdFromURL() {
-  const params = new URLSearchParams(location.search);
-  return params.get("user");
-}
-
-// データ読み込み
+// ===== データ取得 =====
 fetch("./timecard.json")
-  .then(r => r.json())
-  .then(d => {
-    // 12か月以内に勤務がある人だけ残す
-    data = d.filter(hasRecentRecord);
-    renderUsers();
+  .then(res => {
+    if (!res.ok) throw new Error("JSONが見つかりません");
+    return res.json();
+  })
+  .then(data => {
+    const user = data.find(u => String(u.id) === userId);
+    if (!user) {
+      document.body.innerHTML = "該当する人が見つかりません";
+      return;
+    }
+
+    let totalMin = 0;
+
+    user.records.forEach(r => {
+      if (!r.date.startsWith(monthStr)) return;
+      const work =
+        Math.max(0, toMin(r.end) - toMin(r.start) - (r.break || 0));
+      totalMin += work;
+    });
+
+    document.getElementById("name").innerText = user.name;
+    document.getElementById("total").innerText =
+      (totalMin / 60).toFixed(2) + " 時間";
+    document.getElementById("month").innerText =
+      monthStr + " の合計勤務時間";
+  })
+  .catch(err => {
+    document.body.innerHTML = "データを読み込めません";
+    console.error(err);
   });
-
-function renderUsers() {
-  const paramUserId = getUserIdFromURL();
-
-  userSelect.innerHTML = data
-    .map(u => `<option value="${u.id}">${u.name}</option>`)
-    .join("");
-
-  // URL指定があればその人を固定
-  if (paramUserId && data.some(u => u.id == paramUserId)) {
-    userSelect.value = paramUserId;
-    userSelect.disabled = true; // 切替不可
-  }
-
-  render();
-}
-
-userSelect.onchange = render;
-monthSelect.onchange = render;
-
-function render() {
-  const u = data.find(x => x.id == userSelect.value);
-  if (!u) return;
-
-  const month = monthSelect.value;
-  let totalMin = 0;
-
-  records.innerHTML =
-    "<tr><th>日付</th><th>勤務時間</th></tr>";
-
-  u.records.forEach(r => {
-    if (month && !r.date.startsWith(month)) return;
-
-    const s = toMin(r.start);
-    const e = toMin(r.end);
-    const workMin = Math.max(0, (e - s) - (r.break || 0));
-
-    totalMin += workMin;
-
-    records.innerHTML += `
-      <tr>
-        <td>${r.date}</td>
-        <td>${(workMin / 60).toFixed(2)} 時間</td>
-      </tr>
-    `;
-  });
-
-  summary.innerText = `${(totalMin / 60).toFixed(2)} 時間`;
-}
