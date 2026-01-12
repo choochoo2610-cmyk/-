@@ -14,6 +14,21 @@ const end = document.getElementById("end");
 const memo = document.getElementById("memo");
 const breakTime = document.getElementById("breakTime");
 const viewUrl = document.getElementById("viewUrl");
+// ===== 締め日設定 =====
+const CLOSE_DAY = 20;
+
+// targetMonth: "2026-02" など
+function isInClosingMonth(dateStr, targetMonth) {
+  const d = new Date(dateStr);
+  const [y, m] = targetMonth.split("-").map(Number);
+
+  // 前月21日 00:00
+  const start = new Date(y, m - 2, CLOSE_DAY + 1, 0, 0, 0);
+  // 当月20日 23:59
+  const end = new Date(y, m - 1, CLOSE_DAY, 23, 59, 59);
+
+  return d >= start && d <= end;
+}
 
 // ===== 保存 =====
 function save() {
@@ -147,7 +162,7 @@ function render() {
     "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th><th>操作</th></tr>";
 
   u.records.forEach((r, i) => {
-    if (month && !r.date.startsWith(month)) return;
+    if (month && !isInClosingMonth(r.date, month)) return;
 
     const s = toMin(r.start);
     const e = toMin(r.end);
