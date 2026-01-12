@@ -2,9 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>タイムカード</title>
+  <title>タイムカード管理</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
@@ -18,19 +17,8 @@
 </section>
 
 <section>
-  <h2>人の選択・編集</h2>
+  <h2>人の選択</h2>
   <select id="userSelect" onchange="render()"></select>
-  <button onclick="editUser()">人の編集</button>
-  <button onclick="deleteUser()">人の削除</button>
-</section>
-<section>
-  <h2>閲覧専用URL（人ごと）</h2>
-  <div id="viewUrl" style="word-break:break-all;"></div>
-  <button onclick="copyViewUrl()">URLをコピー</button>
-</section>
-<section>
-  <h2>月の選択</h2>
-  <input type="month" id="monthSelect" onchange="render()">
 </section>
 
 <section>
@@ -38,46 +26,25 @@
   日付 <input type="date" id="date"><br>
   出勤 <input type="time" id="start">
   退勤 <input type="time" id="end"><br>
-  休憩（分）
-<input type="number" id="breakTime" value="0" min="0" step="1"> 分
-  <br>
-  メモ <input id="memo" size="40"><br>
+  休憩（分）<input type="number" id="breakTime" value="0"><br>
   <button onclick="addRecord()">保存</button>
 </section>
 
 <section>
-  <h2>今月の概算</h2>
+  <h2>今期（20日締め）合計</h2>
   <div id="summary"></div>
 </section>
 
-  <section>
-  <h2>閲覧用データ出力（管理者用）</h2>
-  <button onclick="exportData()">閲覧用データを出力</button>
-  <p style="font-size:12px;color:#666;">
-    ※ 生成された timecard.json を GitHub にアップしてください
-  </p>
-</section>
 <section>
   <h2>勤務一覧</h2>
   <table id="records"></table>
 </section>
 
 <section>
-  <h2>変更履歴</h2>
-  <ul id="history"></ul>
+  <h2>月1回の更新</h2>
+  <button onclick="finalizeMonth()">今月分を確定（JSON出力）</button>
 </section>
-<section>
-  <h2>1日の終わりの更新</h2>
 
-  <button onclick="finalizeMonth()" style="font-size:16px;">
-  今月（20日締め）を確定する
-</button>
-
-  <p style="font-size:12px;color:#c00;margin-top:6px;">
-    ※ 押すと閲覧用データを書き出し、GitHubを開きます
-  </p>
-</section>
-<!-- ★ JSはここだけ -->
 <script src="./script.js"></script>
 </body>
 </html>
