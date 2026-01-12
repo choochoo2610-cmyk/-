@@ -1,63 +1,51 @@
-// ===== データ管理 =====
-let data = JSON.parse(localStorage.getItem("timecard-data") || "[]");
+const CLOSE_DAY = 20;
 
+/* ===== 安全な初期化 ===== */
+let data = [];
+try {
+  data = JSON.parse(localStorage.getItem("timecard-data") || "[]");
+} catch {
+  data = [];
+  localStorage.removeItem("timecard-data");
+}
+
+/* ===== 要素 ===== */
 const userName = document.getElementById("userName");
 const userWage = document.getElementById("userWage");
 const userSelect = document.getElementById("userSelect");
-const monthSelect = document.getElementById("monthSelect");
-const records = document.getElementById("records");
-const summary = document.getElementById("summary");
-const history = document.getElementById("history");
 const date = document.getElementById("date");
 const start = document.getElementById("start");
 const end = document.getElementById("end");
-const memo = document.getElementById("memo");
 const breakTime = document.getElementById("breakTime");
-const viewUrl = document.getElementById("viewUrl");
-// ===== 締め日設定 =====
-const CLOSE_DAY = 20;
+const records = document.getElementById("records");
+const summary = document.getElementById("summary");
 
-// targetMonth: "2026-02" など
-function isInClosingMonth(dateStr, targetMonth) {
-  const d = new Date(dateStr);
-  const [y, m] = targetMonth.split("-").map(Number);
-
-  // 前月21日 00:00
-  const start = new Date(y, m - 2, CLOSE_DAY + 1, 0, 0, 0);
-  // 当月20日 23:59
-  const end = new Date(y, m - 1, CLOSE_DAY, 23, 59, 59);
-
-  return d >= start && d <= end;
-}
-
-// ===== 保存 =====
+/* ===== 共通 ===== */
 function save() {
   localStorage.setItem("timecard-data", JSON.stringify(data));
 }
 
-// ===== 選択中の人 =====
 function getUser() {
   return data.find(u => u.id == userSelect.value);
 }
 
-// ===== 履歴 =====
-function addHistory(text) {
-  const u = getUser();
-  if (!u) return;
-  const t = new Date().toLocaleString();
-  u.history.push(`${t}：${text}`);
+function toMin(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
 }
 
-// ===== 人管理 =====
+/* ===== 人 ===== */
 function addUser() {
-  if (!userName.value || !userWage.value) return;
+  if (!userName.value || !userWage.value) {
+    alert("名前と時給を入力してください");
+    return;
+  }
 
   data.push({
     id: Date.now(),
     name: userName.value,
     wage: Number(userWage.value),
-    records: [],
-    history: [`${new Date().toLocaleString()}：人を追加`]
+    records: []
   });
 
   userName.value = "";
@@ -66,199 +54,72 @@ function addUser() {
   render();
 }
 
-function editUser() {
-  const u = getUser();
-  if (!u) return;
-
-  const newName = prompt("名前", u.name);
-  const newWage = prompt("時給", u.wage);
-
-  if (newName && newName !== u.name) {
-    u.name = newName;
-    addHistory(`名前を「${newName}」に変更`);
-  }
-  if (newWage && Number(newWage) !== u.wage) {
-    u.wage = Number(newWage);
-    addHistory(`時給を ¥${newWage} に変更`);
-  }
-
-  save();
-  render();
-}
-
-function deleteUser() {
-  const u = getUser();
-  if (!u) return;
-  if (!confirm(`${u.name} を削除しますか？`)) return;
-
-  data = data.filter(x => x.id !== u.id);
-  save();
-  render();
-}
-
-// ===== 勤務 =====
-function toMin(t) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-
+/* ===== 勤務 ===== */
 function addRecord() {
   const u = getUser();
-  if (!u) return;
-  if (!date.value || !start.value || !end.value) return;
+  if (!u || !date.value || !start.value || !end.value) return;
 
-  const record = {
+  u.records.push({
     date: date.value,
     start: start.value,
     end: end.value,
-    break: Number(breakTime.value) || 0,
-    memo: memo.value
-  };
+    break: Number(breakTime.value) || 0
+  });
 
-  u.records.push(record);
-  addHistory(`${record.date} 勤務追加（休憩 ${record.break} 分）`);
-
-  memo.value = "";
   save();
   render();
 }
 
-function deleteRecord(i) {
+/* ===== 20日締め判定 ===== */
+function inThisPeriod(d) {
+  const now = new Date();
+  const close = new Date(now.getFullYear(), now.getMonth(), CLOSE_DAY);
+  const startP = new Date(close);
+  startP.setMonth(startP.getMonth() - 1);
+  startP.setDate(CLOSE_DAY + 1);
+  return d >= startP && d <= close;
+}
+
+/* ===== 描画 ===== */
+function render() {
+  userSelect.innerHTML = data
+    .map(u => `<option value="${u.id}">${u.name}</option>`)
+    .join("");
+
   const u = getUser();
   if (!u) return;
 
-  addHistory(`${u.records[i].date} の勤務を削除`);
-  u.records.splice(i, 1);
-
-  save();
-  render();
-}
-
-// ===== 描画 =====
-function render() {
-  const selectedId = userSelect.value;
-
-  userSelect.innerHTML = data
-    .map(u => `<option value="${u.id}">${u.name}（¥${u.wage}）</option>`)
-    .join("");
-
-  if (selectedId && data.some(u => u.id == selectedId)) {
-    userSelect.value = selectedId;
-  }
-
-  const u = getUser();
-  if (!u) {
-    records.innerHTML = "";
-    summary.innerText = "";
-    history.innerHTML = "";
-    viewUrl.innerText = "";
-    return;
-  }
-
-  const month = monthSelect.value;
   let totalMin = 0;
+  records.innerHTML = "<tr><th>日付</th><th>時間</th></tr>";
 
-  records.innerHTML =
-    "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th><th>操作</th></tr>";
+  u.records.forEach(r => {
+    const d = new Date(r.date);
+    if (!inThisPeriod(d)) return;
 
-  u.records.forEach((r, i) => {
-    if (month && !isInClosingMonth(r.date, month)) return;
-
-    const s = toMin(r.start);
-    const e = toMin(r.end);
-    const workMin = Math.max(0, (e - s) - (r.break || 0));
-    totalMin += workMin;
+    const m = Math.max(0, toMin(r.end) - toMin(r.start) - r.break);
+    totalMin += m;
 
     records.innerHTML += `
       <tr>
         <td>${r.date}</td>
-        <td>${r.start}〜${r.end}</td>
-        <td>${r.break || 0}分</td>
-        <td>${r.memo || ""}</td>
-        <td><button onclick="deleteRecord(${i})">削除</button></td>
-      </tr>
-    `;
+        <td>${(m / 60).toFixed(2)}</td>
+      </tr>`;
   });
 
   summary.innerText =
-    `合計 ${(totalMin / 60).toFixed(2)} 時間 ／ 概算 ¥${Math.floor(
-      (totalMin / 60) * u.wage
-    )}`;
-
-  history.innerHTML = u.history
-    .slice(-20)
-    .map(h => `<li>${h}</li>`)
-    .join("");
-
-  // ===== 閲覧専用URL（GitHub Pages対応版）=====
-  const baseUrl = location.origin + location.pathname.replace(/\/[^/]*$/, "/");
-  viewUrl.innerText = `${baseUrl}view.html?user=${u.id}`;
+    `合計 ${(totalMin / 60).toFixed(2)} 時間 ／ ¥${Math.floor((totalMin / 60) * u.wage)}`;
 }
 
-// ===== 初期化 =====
-window.onload = () => {
-  render();
-};
-
-// ===== 閲覧用データ出力 =====
-function exportData() {
+/* ===== 月1回確定 ===== */
+function finalizeMonth() {
   const blob = new Blob(
     [JSON.stringify(data, null, 2)],
     { type: "application/json" }
   );
-
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "timecard.json";
   a.click();
 }
 
-// ===== URLコピー =====
-function copyViewUrl() {
-  if (!viewUrl.innerText) return;
-  navigator.clipboard.writeText(viewUrl.innerText);
-  alert("閲覧用URLをコピーしました");
-}
-function openGitHub() {
-  const repoUrl = "https://github.com/choochoo2610-cmyk/-";
-  window.open(repoUrl + "/upload/main", "_blank");
-}
-
-
-  // 全員に履歴を残す（任意）
-  data.forEach(u => {
-    u.history.push(
-      `${new Date().toLocaleString()}：本日の更新を確定`
-    );
-  });
-
-  save();        // localStorage保存
-  exportData();  // timecard.json 作成
-  openGitHub();  // GitHubを開く
-}
-function finalizeMonth() {
-  const month = monthSelect.value;
-  if (!month) {
-    alert("締める月を選択してください");
-    return;
-  }
-
-  if (!confirm(`${month}（${CLOSE_DAY}日締め）を確定しますか？`)) return;
-
-  data.forEach(u => {
-    u.history.push(
-      `${new Date().toLocaleString()}：${month} を確定`
-    );
-  });
-
-  save();        // 管理画面保存
-  exportData();  // timecard.json 作成
-
-  alert(
-`① ${month}分を確定しました
-② timecard.json を保存しました
-③ GitHub にアップしてください`
-  );
-
-  openGitHub();
-}
+window.onload = render;
