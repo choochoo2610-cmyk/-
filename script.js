@@ -12,6 +12,7 @@ const date = document.getElementById("date");
 const start = document.getElementById("start");
 const end = document.getElementById("end");
 const memo = document.getElementById("memo");
+const viewUrl = document.getElementById("viewUrl");
 
 function save() {
   localStorage.setItem("timecard-data", JSON.stringify(data));
@@ -171,6 +172,10 @@ totalMin += workMin;
     .slice(-20)
     .map(h => `<li>${h}</li>`)
     .join("");
+  // 閲覧専用URL表示
+const baseUrl = location.origin + location.pathname.replace("index.html", "");
+viewUrl.innerText =
+  `${baseUrl}view.html?user=${u.id}`;
 }
 
 // ===== 初期化 =====
@@ -188,4 +193,11 @@ function exportData() {
   a.href = URL.createObjectURL(blob);
   a.download = "timecard.json";
   a.click();
+}
+function copyViewUrl() {
+  const text = viewUrl.innerText;
+  if (!text) return;
+
+  navigator.clipboard.writeText(text);
+  alert("閲覧用URLをコピーしました");
 }
