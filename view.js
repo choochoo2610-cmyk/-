@@ -10,18 +10,47 @@ function toMin(t) {
   return h * 60 + m;
 }
 
+// 今日から12か月前
+function oneYearAgo() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 12);
+  return d;
+}
+
+// 12か月以内の勤務があるか
+function hasRecentRecord(user) {
+  const limit = oneYearAgo();
+  return user.records.some(r => new Date(r.date) >= limit);
+}
+
+// URLパラメータ取得
+function getUserIdFromURL() {
+  const params = new URLSearchParams(location.search);
+  return params.get("user");
+}
+
 // データ読み込み
 fetch("./timecard.json")
   .then(r => r.json())
   .then(d => {
-    data = d;
+    // 12か月以内に勤務がある人だけ残す
+    data = d.filter(hasRecentRecord);
     renderUsers();
   });
 
 function renderUsers() {
+  const paramUserId = getUserIdFromURL();
+
   userSelect.innerHTML = data
     .map(u => `<option value="${u.id}">${u.name}</option>`)
     .join("");
+
+  // URL指定があればその人を固定
+  if (paramUserId && data.some(u => u.id == paramUserId)) {
+    userSelect.value = paramUserId;
+    userSelect.disabled = true; // 切替不可
+  }
+
   render();
 }
 
