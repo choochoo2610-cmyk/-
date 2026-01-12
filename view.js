@@ -10,6 +10,7 @@ function toMin(t) {
   return h * 60 + m;
 }
 
+// データ読み込み
 fetch("./timecard.json")
   .then(r => r.json())
   .then(d => {
@@ -35,7 +36,7 @@ function render() {
   let totalMin = 0;
 
   records.innerHTML =
-    "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th></tr>";
+    "<tr><th>日付</th><th>勤務時間</th></tr>";
 
   u.records.forEach(r => {
     if (month && !r.date.startsWith(month)) return;
@@ -43,20 +44,16 @@ function render() {
     const s = toMin(r.start);
     const e = toMin(r.end);
     const workMin = Math.max(0, (e - s) - (r.break || 0));
+
     totalMin += workMin;
 
     records.innerHTML += `
       <tr>
         <td>${r.date}</td>
-        <td>${r.start}〜${r.end}</td>
-        <td>${r.break || 0}分</td>
-        <td>${r.memo}</td>
+        <td>${(workMin / 60).toFixed(2)} 時間</td>
       </tr>
     `;
   });
 
-  summary.innerText =
-    `合計 ${(totalMin / 60).toFixed(2)} 時間 ／ 概算 ¥${Math.floor(
-      (totalMin / 60) * u.wage
-    )}`;
+  summary.innerText = `${(totalMin / 60).toFixed(2)} 時間`;
 }
