@@ -23,7 +23,11 @@
   <button onclick="editUser()">人の編集</button>
   <button onclick="deleteUser()">人の削除</button>
 </section>
-
+<section>
+  <h2>閲覧専用URL（人ごと）</h2>
+  <div id="viewUrl" style="word-break:break-all;"></div>
+  <button onclick="copyViewUrl()">URLをコピー</button>
+</section>
 <section>
   <h2>月の選択</h2>
   <input type="month" id="monthSelect" onchange="render()">
