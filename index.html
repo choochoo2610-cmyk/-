@@ -34,11 +34,9 @@
   日付 <input type="date" id="date"><br>
   出勤 <input type="time" id="start">
   退勤 <input type="time" id="end"><br>
-  丸め
-  <select id="round">
-    <option value="1">1分</option>
-    <option value="5">5分</option>
-  </select><br>
+  休憩（分）
+<input type="number" id="breakTime" value="0" min="0" step="1"> 分
+  <br>
   メモ <input id="memo" size="40"><br>
   <button onclick="addRecord()">保存</button>
 </section>
