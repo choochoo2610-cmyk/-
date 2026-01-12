@@ -5,46 +5,50 @@
   <title>タイムカード管理</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+
 <body>
 
-<h1>タイムカード管理</h1>
+<h2>管理画面</h2>
 
-<section>
-  <h2>人の追加</h2>
-  名前 <input id="userName">
-  時給 <input id="userWage" type="number">
-  <button onclick="addUser()">追加</button>
-</section>
+<h3>人の管理</h3>
+<input id="userName" placeholder="名前">
+<input id="userWage" placeholder="時給" type="number">
+<button onclick="addUser()">追加</button>
+<button onclick="editUser()">編集</button>
+<button onclick="deleteUser()">削除</button>
 
-<section>
-  <h2>人の選択</h2>
-  <select id="userSelect" onchange="render()"></select>
-</section>
+<hr>
 
-<section>
-  <h2>勤務入力</h2>
-  日付 <input type="date" id="date"><br>
-  出勤 <input type="time" id="start">
-  退勤 <input type="time" id="end"><br>
-  休憩（分）<input type="number" id="breakTime" value="0"><br>
-  <button onclick="addRecord()">保存</button>
-</section>
+<h3>勤務入力</h3>
+<select id="userSelect"></select><br><br>
 
-<section>
-  <h2>今期（20日締め）合計</h2>
-  <div id="summary"></div>
-</section>
+<input id="date" type="date">
+<input id="start" type="time">
+<input id="end" type="time">
+<input id="breakTime" type="number" placeholder="休憩(分)">
+<input id="memo" placeholder="メモ">
+<button onclick="addRecord()">追加</button>
 
-<section>
-  <h2>勤務一覧</h2>
-  <table id="records"></table>
-</section>
+<hr>
 
-<section>
-  <h2>月1回の更新</h2>
-  <button onclick="finalizeMonth()">今月分を確定（JSON出力）</button>
-</section>
+<h3>表示</h3>
+<input id="monthSelect" type="month">
 
-<script src="./script.js"></script>
+<table border="1">
+  <tbody id="records"></tbody>
+</table>
+
+<p id="summary"></p>
+
+<hr>
+
+<button onclick="finalizeMonth()">月の更新を確定</button>
+
+<p>閲覧用URL：</p>
+<code id="viewUrl"></code>
+
+<!-- ★ここだけ！！ -->
+<script src="script.js"></script>
+
 </body>
 </html>
