@@ -12,12 +12,15 @@ const date = document.getElementById("date");
 const start = document.getElementById("start");
 const end = document.getElementById("end");
 const memo = document.getElementById("memo");
+const breakTime = document.getElementById("breakTime");
 const viewUrl = document.getElementById("viewUrl");
 
+// ===== 保存 =====
 function save() {
   localStorage.setItem("timecard-data", JSON.stringify(data));
 }
 
+// ===== 選択中の人 =====
 function getUser() {
   return data.find(u => u.id == userSelect.value);
 }
@@ -87,23 +90,23 @@ function toMin(t) {
 function addRecord() {
   const u = getUser();
   if (!u) return;
+  if (!date.value || !start.value || !end.value) return;
 
-const record = {
-  date: date.value,
-  start: start.value,
-  end: end.value,
-  break: Number(breakTime.value) || 0,
-  memo: memo.value
-};
+  const record = {
+    date: date.value,
+    start: start.value,
+    end: end.value,
+    break: Number(breakTime.value) || 0,
+    memo: memo.value
+  };
 
- u.records.push(record);
-addHistory(`${record.date} 勤務追加（休憩 ${record.break} 分）`);
+  u.records.push(record);
+  addHistory(`${record.date} 勤務追加（休憩 ${record.break} 分）`);
 
   memo.value = "";
   save();
   render();
 }
-const breakTime = document.getElementById("breakTime");
 
 function deleteRecord(i) {
   const u = getUser();
@@ -133,6 +136,7 @@ function render() {
     records.innerHTML = "";
     summary.innerText = "";
     history.innerHTML = "";
+    viewUrl.innerText = "";
     return;
   }
 
@@ -140,27 +144,25 @@ function render() {
   let totalMin = 0;
 
   records.innerHTML =
-  "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th><th>操作</th></tr>";
+    "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th><th>操作</th></tr>";
 
   u.records.forEach((r, i) => {
     if (month && !r.date.startsWith(month)) return;
 
     const s = toMin(r.start);
-const e = toMin(r.end);
-const workMin = Math.max(0, (e - s) - (r.break || 0));
-totalMin += workMin;
-    
+    const e = toMin(r.end);
+    const workMin = Math.max(0, (e - s) - (r.break || 0));
+    totalMin += workMin;
+
     records.innerHTML += `
-  <tr>
-    <td>${r.date}</td>
-    <td>${r.start}〜${r.end}</td>
-    <td>${r.break || 0}分</td>
-    <td>${r.memo}</td>
-    <td>
-      <button onclick="deleteRecord(${i})">削除</button>
-    </td>
-  </tr>
-`;
+      <tr>
+        <td>${r.date}</td>
+        <td>${r.start}〜${r.end}</td>
+        <td>${r.break || 0}分</td>
+        <td>${r.memo || ""}</td>
+        <td><button onclick="deleteRecord(${i})">削除</button></td>
+      </tr>
+    `;
   });
 
   summary.innerText =
@@ -172,16 +174,17 @@ totalMin += workMin;
     .slice(-20)
     .map(h => `<li>${h}</li>`)
     .join("");
-  // 閲覧専用URL表示
-const baseUrl = location.origin + location.pathname.replace("index.html", "");
-viewUrl.innerText =
-  `${baseUrl}view.html?user=${u.id}`;
+
+  // ===== 閲覧専用URL（GitHub Pages対応版）=====
+  const baseUrl = location.origin + location.pathname.replace(/\/[^/]*$/, "/");
+  viewUrl.innerText = `${baseUrl}view.html?user=${u.id}`;
 }
 
 // ===== 初期化 =====
 window.onload = () => {
   render();
 };
+
 // ===== 閲覧用データ出力 =====
 function exportData() {
   const blob = new Blob(
@@ -194,10 +197,10 @@ function exportData() {
   a.download = "timecard.json";
   a.click();
 }
-function copyViewUrl() {
-  const text = viewUrl.innerText;
-  if (!text) return;
 
-  navigator.clipboard.writeText(text);
+// ===== URLコピー =====
+function copyViewUrl() {
+  if (!viewUrl.innerText) return;
+  navigator.clipboard.writeText(viewUrl.innerText);
   alert("閲覧用URLをコピーしました");
 }
