@@ -8,6 +8,10 @@ const monthSelect = document.getElementById("monthSelect");
 const records = document.getElementById("records");
 const summary = document.getElementById("summary");
 const history = document.getElementById("history");
+const date = document.getElementById("date");
+const start = document.getElementById("start");
+const end = document.getElementById("end");
+const memo = document.getElementById("memo");
 
 function save() {
   localStorage.setItem("timecard-data", JSON.stringify(data));
