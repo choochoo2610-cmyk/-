@@ -1,3 +1,19 @@
+// ===== 締め日設定 =====
+const CLOSE_DAY = 20;
+
+// targetMonth: "2026-02" など
+function isInClosingMonth(dateStr, targetMonth) {
+  const d = new Date(dateStr);
+  const [y, m] = targetMonth.split("-").map(Number);
+
+  // 前月21日 00:00
+  const start = new Date(y, m - 2, CLOSE_DAY + 1, 0, 0, 0);
+  // 当月20日 23:59
+  const end = new Date(y, m - 1, CLOSE_DAY, 23, 59, 59);
+
+  return d >= start && d <= end;
+}
+
 // ===== URLから user ID を取得 =====
 const params = new URLSearchParams(location.search);
 const userId = params.get("user");
@@ -34,7 +50,7 @@ fetch("./timecard.json")
     let totalMin = 0;
 
     user.records.forEach(r => {
-      if (!r.date.startsWith(monthStr)) return;
+      if (!isInClosingMonth(r.date, monthStr)) return;
       const work =
         Math.max(0, toMin(r.end) - toMin(r.start) - (r.break || 0));
       totalMin += work;
