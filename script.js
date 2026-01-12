@@ -1,24 +1,31 @@
-let data = JSON.parse(localStorage.getItem("timecard") || "[]");
-let editIndex = null;
+// ===== データ管理 =====
+let data = JSON.parse(localStorage.getItem("timecard-data") || "[]");
 
+const userName = document.getElementById("userName");
+const userWage = document.getElementById("userWage");
 const userSelect = document.getElementById("userSelect");
 const monthSelect = document.getElementById("monthSelect");
-const startInput = document.getElementById("start");
-const endInput = document.getElementById("end");
-
-monthSelect.value = new Date().toISOString().slice(0, 7);
-monthSelect.onchange = render;
+const records = document.getElementById("records");
+const summary = document.getElementById("summary");
+const history = document.getElementById("history");
 
 function save() {
-  localStorage.setItem("timecard", JSON.stringify(data));
+  localStorage.setItem("timecard-data", JSON.stringify(data));
 }
 
 function getUser() {
   return data.find(u => u.id == userSelect.value);
 }
 
-/* ===== 人の管理 ===== */
+// ===== 履歴 =====
+function addHistory(text) {
+  const u = getUser();
+  if (!u) return;
+  const t = new Date().toLocaleString();
+  u.history.push(`${t}：${text}`);
+}
 
+// ===== 人管理 =====
 function addUser() {
   if (!userName.value || !userWage.value) return;
 
@@ -27,7 +34,7 @@ function addUser() {
     name: userName.value,
     wage: Number(userWage.value),
     records: [],
-    history: []
+    history: [`${new Date().toLocaleString()}：人を追加`]
   });
 
   userName.value = "";
@@ -40,15 +47,17 @@ function editUser() {
   const u = getUser();
   if (!u) return;
 
-  const newName = prompt("名前を編集", u.name);
-  if (newName === null) return;
+  const newName = prompt("名前", u.name);
+  const newWage = prompt("時給", u.wage);
 
-  const newWage = prompt("時給を編集", u.wage);
-  if (newWage === null) return;
-
-  u.name = newName;
-  u.wage = Number(newWage);
-  u.history.push(`人情報編集：${newName}（¥${newWage}）`);
+  if (newName && newName !== u.name) {
+    u.name = newName;
+    addHistory(`名前を「${newName}」に変更`);
+  }
+  if (newWage && Number(newWage) !== u.wage) {
+    u.wage = Number(newWage);
+    addHistory(`時給を ¥${newWage} に変更`);
+  }
 
   save();
   render();
@@ -57,85 +66,57 @@ function editUser() {
 function deleteUser() {
   const u = getUser();
   if (!u) return;
+  if (!confirm(`${u.name} を削除しますか？`)) return;
 
-  if (!confirm(`${u.name} を削除しますか？（全データ削除）`)) return;
-
-  data = data.filter(user => user.id !== u.id);
+  data = data.filter(x => x.id !== u.id);
   save();
   render();
 }
 
-/* ===== 勤務管理 ===== */
+// ===== 勤務 =====
+function toMin(t) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
 
 function addRecord() {
   const u = getUser();
   if (!u) return;
 
-  const start = roundTime(startInput.value, round.value);
-  const end = roundTime(endInput.value, round.value);
-
   const record = {
     date: date.value,
-    start,
-    end,
+    start: start.value,
+    end: end.value,
     memo: memo.value
   };
 
-  if (editIndex !== null) {
-    u.records[editIndex] = record;
-    u.history.push(`勤務編集：${date.value}`);
-    editIndex = null;
-  } else {
-    u.records.push(record);
-    u.history.push(`勤務追加：${date.value}`);
-  }
+  u.records.push(record);
+  addHistory(`${record.date} の勤務を追加`);
 
   memo.value = "";
   save();
   render();
 }
 
-function editRecord(i) {
-  const r = getUser().records[i];
-  date.value = r.date;
-  startInput.value = r.start;
-  endInput.value = r.end;
-  memo.value = r.memo;
-  editIndex = i;
-}
-
 function deleteRecord(i) {
   const u = getUser();
-  if (!confirm("この勤務を削除しますか？")) return;
+  if (!u) return;
 
-  u.history.push(`勤務削除：${u.records[i].date}`);
+  addHistory(`${u.records[i].date} の勤務を削除`);
   u.records.splice(i, 1);
+
   save();
   render();
 }
 
-/* ===== 共通 ===== */
-
-function roundTime(time, unit) {
-  let [h, m] = time.split(":").map(Number);
-  m = Math.round(m / unit) * unit;
-  if (m === 60) { h++; m = 0; }
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
-function toMin(t) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-
+// ===== 描画 =====
 function render() {
-  const selectedId = userSelect.value; // ★ 今選ばれている人を保存
+  const selectedId = userSelect.value;
 
-  userSelect.innerHTML = data.map(u =>
-    `<option value="${u.id}">${u.name}（¥${u.wage}）</option>`
-  ).join("");
+  userSelect.innerHTML = data
+    .map(u => `<option value="${u.id}">${u.name}（¥${u.wage}）</option>`)
+    .join("");
 
-  // ★ 以前の選択を復元
   if (selectedId && data.some(u => u.id == selectedId)) {
     userSelect.value = selectedId;
   }
@@ -155,11 +136,11 @@ function render() {
     "<tr><th>日付</th><th>時間</th><th>メモ</th><th>操作</th></tr>";
 
   u.records.forEach((r, i) => {
-    if (!r.date.startsWith(month)) return;
+    if (month && !r.date.startsWith(month)) return;
 
     const s = toMin(r.start);
     const e = toMin(r.end);
-    totalMin += (e - s);
+    totalMin += e - s;
 
     records.innerHTML += `
       <tr>
@@ -167,16 +148,22 @@ function render() {
         <td>${r.start}〜${r.end}</td>
         <td>${r.memo}</td>
         <td>
-          <button class="edit" onclick="editRecord(${i})">編集</button>
-          <button class="delete" onclick="deleteRecord(${i})">削除</button>
+          <button onclick="deleteRecord(${i})">削除</button>
         </td>
       </tr>
     `;
   });
 
   summary.innerText =
-    `合計 ${(totalMin / 60).toFixed(2)} 時間 ／ 概算 ¥${Math.floor(totalMin / 60 * u.wage)}`;
+    `合計 ${(totalMin / 60).toFixed(2)} 時間 ／ 概算 ¥${Math.floor(
+      (totalMin / 60) * u.wage
+    )}`;
 
-  history.innerHTML =
-    u.history.slice(-10).map(h => `<li>${h}</li>`).join("");
+  history.innerHTML = u.history
+    .slice(-20)
+    .map(h => `<li>${h}</li>`)
+    .join("");
 }
+
+// ===== 初期化 =====
+render();
