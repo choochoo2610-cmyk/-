@@ -71,13 +71,37 @@ function editUser() {
   render();
 }
 
-function deleteUser() {
-  const u = getUser();
-  if (!u) return;
-  if (!confirm(`${u.name} を削除しますか？`)) return;
+records.innerHTML = `
+  <tr>
+    <th>日付</th>
+    <th>勤務時間</th>
+    <th>編集</th>
+    <th>削除</th>
+  </tr>
+`;
 
-  data = data.filter(x => x.id !== u.id);
-  save();
+u.records.forEach((r, i) => {
+  if (month && !r.date.startsWith(month)) return;
+
+  const m = Math.max(
+    0,
+    toMin(r.end) - toMin(r.start) - (r.break || 0)
+  );
+  totalMin += m;
+
+  records.innerHTML += `
+    <tr>
+      <td>${r.date}</td>
+      <td>${(m / 60).toFixed(2)} 時間</td>
+      <td>
+        <button onclick="editRecord(${i})">編集</button>
+      </td>
+      <td>
+        <button onclick="deleteRecord(${i})">削除</button>
+      </td>
+    </tr>
+  `;
+});
   render();
 }
 
