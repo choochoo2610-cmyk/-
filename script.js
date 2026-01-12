@@ -204,3 +204,23 @@ function copyViewUrl() {
   navigator.clipboard.writeText(viewUrl.innerText);
   alert("閲覧用URLをコピーしました");
 }
+function openGitHub() {
+  const repoUrl = "https://github.com/choochoo2610-cmyk/-";
+  window.open(repoUrl + "/upload/main", "_blank");
+}
+function finalizeToday() {
+  const today = new Date().toLocaleDateString();
+
+  if (!confirm(`【${today}】の内容を確定しますか？`)) return;
+
+  // 全員に履歴を残す（任意）
+  data.forEach(u => {
+    u.history.push(
+      `${new Date().toLocaleString()}：本日の更新を確定`
+    );
+  });
+
+  save();        // localStorage保存
+  exportData();  // timecard.json 作成
+  openGitHub();  // GitHubを開く
+}
