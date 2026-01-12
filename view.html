@@ -2,32 +2,101 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>勤務時間一覧（閲覧専用）</title>
+  <title>勤務時間（閲覧専用）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="./style.css">
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 20px;
+    }
+    .box {
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: center;
+      font-size: 14px;
+    }
+  </style>
 </head>
 <body>
 
-<h1>勤務時間（閲覧専用）</h1>
+<h1 id="userName">勤務時間</h1>
 
-<section>
-  人の選択
-  <select id="userSelect"></select>
+<div class="box">
+  <strong id="summary"></strong>
+</div>
 
-  月の選択
-  <input type="month" id="monthSelect">
-</section>
+<div class="box">
+  <table id="records">
+    <tr>
+      <th>日付</th>
+      <th>勤務時間</th>
+      <th>休憩</th>
+    </tr>
+  </table>
+</div>
 
-<section>
-  <h2>今月の合計時間</h2>
-  <div id="summary" style="font-size:20px;font-weight:bold;"></div>
-</section>
+<script>
+/* ===== URLから user id 取得 ===== */
+const params = new URLSearchParams(location.search);
+const userId = params.get("user");
 
-<section>
-  <h2>日別勤務時間</h2>
-  <table id="records"></table>
-</section>
+if (!userId) {
+  document.body.innerHTML = "ユーザーが指定されていません";
+  throw new Error();
+}
 
-<script src="./view.js"></script>
+/* ===== データ取得 ===== */
+fetch("./timecard.json")
+  .then(res => res.json())
+  .then(data => {
+    const user = data.find(u => u.id == userId);
+    if (!user) {
+      document.body.innerHTML = "データが見つかりません";
+      return;
+    }
+
+    document.getElementById("userName").innerText =
+      `${user.name} さんの勤務時間`;
+
+    let totalMin = 0;
+    const table = document.getElementById("records");
+
+    user.records.forEach(r => {
+      const [sh, sm] = r.start.split(":").map(Number);
+      const [eh, em] = r.end.split(":").map(Number);
+      const workMin =
+        (eh * 60 + em) - (sh * 60 + sm) - (r.break || 0);
+
+      totalMin += Math.max(0, workMin);
+
+      table.innerHTML += `
+        <tr>
+          <td>${r.date}</td>
+          <td>${r.start}〜${r.end}</td>
+          <td>${r.break || 0}分</td>
+        </tr>
+      `;
+    });
+
+    document.getElementById("summary").innerText =
+      `合計 ${(totalMin / 60).toFixed(2)} 時間`;
+  });
+</script>
+
 </body>
 </html>
