@@ -4,8 +4,7 @@
   <meta charset="UTF-8">
   <title>タイムカード</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
-<script src="script.js"></script>
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
@@ -21,6 +20,8 @@
 <section>
   <h2>人の選択</h2>
   <select id="userSelect" onchange="render()"></select>
+  <button onclick="editUser()">人の編集</button>
+  <button onclick="deleteUser()">人の削除</button>
 </section>
 
 <section>
@@ -57,6 +58,7 @@
   <ul id="history"></ul>
 </section>
 
-<script src="script.js"></script>
+<!-- ★ script.js は必ず body の一番最後 ★ -->
+<script src="./script.js"></script>
 </body>
 </html>
