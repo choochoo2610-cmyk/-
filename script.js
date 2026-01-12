@@ -223,10 +223,7 @@ function openGitHub() {
   const repoUrl = "https://github.com/choochoo2610-cmyk/-";
   window.open(repoUrl + "/upload/main", "_blank");
 }
-function finalizeToday() {
-  const today = new Date().toLocaleDateString();
 
-  if (!confirm(`【${today}】の内容を確定しますか？`)) return;
 
   // 全員に履歴を残す（任意）
   data.forEach(u => {
@@ -238,4 +235,30 @@ function finalizeToday() {
   save();        // localStorage保存
   exportData();  // timecard.json 作成
   openGitHub();  // GitHubを開く
+}
+function finalizeMonth() {
+  const month = monthSelect.value;
+  if (!month) {
+    alert("締める月を選択してください");
+    return;
+  }
+
+  if (!confirm(`${month}（${CLOSE_DAY}日締め）を確定しますか？`)) return;
+
+  data.forEach(u => {
+    u.history.push(
+      `${new Date().toLocaleString()}：${month} を確定`
+    );
+  });
+
+  save();        // 管理画面保存
+  exportData();  // timecard.json 作成
+
+  alert(
+`① ${month}分を確定しました
+② timecard.json を保存しました
+③ GitHub にアップしてください`
+  );
+
+  openGitHub();
 }
