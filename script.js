@@ -28,6 +28,26 @@ function toMin(t) {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
 }
+// ===== 20日締めの期間を取得 =====
+function getClosingPeriod() {
+  const now = new Date();
+
+  let endYear = now.getFullYear();
+  let endMonth = now.getMonth();
+  let startYear = endYear;
+  let startMonth = endMonth - 1;
+
+  // 月またぎ調整
+  if (startMonth < 0) {
+    startMonth = 11;
+    startYear--;
+  }
+
+  const start = new Date(startYear, startMonth, 21);
+  const end = new Date(endYear, endMonth, 20, 23, 59, 59);
+
+  return { start, end };
+}
 
 // ===== select管理（重要）=====
 function updateUserSelect() {
@@ -132,7 +152,10 @@ function render() {
     "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th><th></th></tr>";
 
   u.records.forEach((r, i) => {
-    if (month && !r.date.startsWith(month)) return;
+  const { start, end } = getClosingPeriod();
+const d = new Date(r.date);
+
+if (d < start || d > end) return;
 
     const work =
       Math.max(0, toMin(r.end) - toMin(r.start) - r.break);
@@ -163,6 +186,12 @@ function copyViewUrl() {
 
 // ===== 月1回 =====
 function finalizeMonth() {
+  const { start, end } = getClosingPeriod();
+
+  if (!confirm(
+    `${start.getMonth()+1}/21〜${end.getMonth()+1}/20 を確定しますか？`
+  )) return;
+
   const blob = new Blob(
     [JSON.stringify(data, null, 2)],
     { type: "application/json" }
@@ -173,6 +202,10 @@ function finalizeMonth() {
   a.download = "timecard.json";
   a.click();
 }
+
+const { start, end } = getClosingPeriod();
+summary.innerText =
+  `合計 ${(totalMin / 60).toFixed(2)} 時間（${start.getMonth()+1}/21〜${end.getMonth()+1}/20）`;
 
 // ===== 初期化 =====
 window.onload = () => {
