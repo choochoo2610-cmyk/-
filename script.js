@@ -166,4 +166,6 @@ function render() {
 }
 
 // ===== 初期化 =====
-render();
+window.onload = () => {
+  render();
+};
