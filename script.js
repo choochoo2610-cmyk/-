@@ -128,3 +128,28 @@ const startInput = document.getElementById("start");
 const endInput = document.getElementById("end");
 
 render();
+
+function deleteUser() {
+  const u = getUser();
+  if (!u) return;
+  if (!confirm(`${u.name} を削除しますか？（全記録も消えます）`)) return;
+
+  data = data.filter(user => user.id !== u.id);
+  save();
+  render();
+}
+
+function editUser() {
+  const u = getUser();
+  if (!u) return;
+
+  const newName = prompt("名前を変更", u.name);
+  const newWage = prompt("時給を変更", u.wage);
+
+  if (newName) u.name = newName;
+  if (newWage) u.wage = Number(newWage);
+
+  u.history.push(`人情報編集：${newName} ¥${newWage}`);
+  save();
+  render();
+}
