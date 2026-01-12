@@ -87,20 +87,22 @@ function addRecord() {
   const u = getUser();
   if (!u) return;
 
-  const record = {
-    date: date.value,
-    start: start.value,
-    end: end.value,
-    memo: memo.value
-  };
+const record = {
+  date: date.value,
+  start: start.value,
+  end: end.value,
+  break: Number(breakTime.value) || 0,
+  memo: memo.value
+};
 
-  u.records.push(record);
-  addHistory(`${record.date} の勤務を追加`);
+ u.records.push(record);
+addHistory(`${record.date} 勤務追加（休憩 ${record.break} 分）`);
 
   memo.value = "";
   save();
   render();
 }
+const breakTime = document.getElementById("breakTime");
 
 function deleteRecord(i) {
   const u = getUser();
@@ -137,25 +139,27 @@ function render() {
   let totalMin = 0;
 
   records.innerHTML =
-    "<tr><th>日付</th><th>時間</th><th>メモ</th><th>操作</th></tr>";
+  "<tr><th>日付</th><th>時間</th><th>休憩</th><th>メモ</th><th>操作</th></tr>";
 
   u.records.forEach((r, i) => {
     if (month && !r.date.startsWith(month)) return;
 
     const s = toMin(r.start);
-    const e = toMin(r.end);
-    totalMin += e - s;
-
+const e = toMin(r.end);
+const workMin = Math.max(0, (e - s) - (r.break || 0));
+totalMin += workMin;
+    
     records.innerHTML += `
-      <tr>
-        <td>${r.date}</td>
-        <td>${r.start}〜${r.end}</td>
-        <td>${r.memo}</td>
-        <td>
-          <button onclick="deleteRecord(${i})">削除</button>
-        </td>
-      </tr>
-    `;
+  <tr>
+    <td>${r.date}</td>
+    <td>${r.start}〜${r.end}</td>
+    <td>${r.break || 0}分</td>
+    <td>${r.memo}</td>
+    <td>
+      <button onclick="deleteRecord(${i})">削除</button>
+    </td>
+  </tr>
+`;
   });
 
   summary.innerText =
